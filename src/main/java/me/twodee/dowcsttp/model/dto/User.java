@@ -22,4 +22,14 @@ public class User {
         @PasswordStrength(minStrength = PasswordStrength.Strength.GOOD, message = "The password you provided is too weak")
         public String password;
     }
+
+    @Data
+    public static class LoginData {
+        @NotBlank(message = "The identifier must not be empty")
+        public String identifier;
+
+        @NotBlank(message = "The password is invalid")
+        @Size(min = 8, message = "The password is invalid")
+        public String password;
+    }
 }

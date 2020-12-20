@@ -24,12 +24,14 @@ import java.util.Map;
 public class GuiController {
 
     @GetMapping("/register")
-    public String register() {
+    public String register(Model formModel) {
+        formModel.addAttribute("title", "Create a new account");
         return "register";
     }
 
     @PostMapping("/register")
     public String register(@Valid User.RegistrationData data, BindingResult result, Model formModel) {
+        formModel.addAttribute("title", "Create a new account");
 
         if (result.hasErrors()) {
             formModel.addAttribute("error", result.getFieldErrors().get(0).getDefaultMessage());
@@ -49,6 +51,12 @@ public class GuiController {
         formModel.addAttribute("values", values);
         return "register";
     }
+
+    @GetMapping("/")
+    public String loginView() {
+        return "login";
+    }
+
 
 
     private final Accounts accounts;

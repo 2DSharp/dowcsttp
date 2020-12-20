@@ -1,39 +1,4 @@
-<html lang="en">
-<head>
-    <title>Create a new account</title>
-    <link rel="stylesheet" href="https://unpkg.com/marx-css/css/marx.min.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <style>
-        .content {
-            padding: 20px;
-            max-width: 600px;
-            margin: 80px auto 0;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        button.secondary {
-            background-color: orangered;
-        }
-
-        #login-prompt {
-            text-align: center;
-        }
-
-        .error {
-            margin: 5px 0;
-            padding: 5px;
-            background-color: rgba(240, 128, 128, 0.2);
-            color: crimson;
-            border: 1px solid crimson;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body>
+{{>header}}
 <div>
     <div class="content">
         <div id="registration-form">
@@ -79,12 +44,10 @@
         </div>
         <div id="login-prompt">
             <hr/>
-            <a href="/login">
+            <a href="/">
                 <button class="secondary"> Already have an account? Login</button>
             </a>
         </div>
     </div>
 </div>
-</body>
-
-</html>
+{{>footer}}
