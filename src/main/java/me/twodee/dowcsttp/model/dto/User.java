@@ -31,5 +31,7 @@ public class User {
         @NotBlank(message = "The password is invalid")
         @Size(min = 8, message = "The password is invalid")
         public String password;
+
+        public String csrf;
     }
 }

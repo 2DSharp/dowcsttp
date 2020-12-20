@@ -16,12 +16,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Controller
 public class GuiController {
+
+    private final Accounts accounts;
+    private final Transactions transactions;
+
+    public GuiController(Accounts accounts, Transactions transactions) {
+        this.accounts = accounts;
+        this.transactions = transactions;
+    }
 
     @GetMapping("/register")
     public String register(Model formModel) {
@@ -31,7 +41,6 @@ public class GuiController {
 
     @PostMapping("/register")
     public String register(@Valid User.RegistrationData data, BindingResult result, Model formModel) {
-        formModel.addAttribute("title", "Create a new account");
 
         if (result.hasErrors()) {
             formModel.addAttribute("error", result.getFieldErrors().get(0).getDefaultMessage());
@@ -49,19 +58,63 @@ public class GuiController {
         Helper.addNotNull(values, "email", data.email);
 
         formModel.addAttribute("values", values);
-        return "register";
+        return register(formModel);
     }
 
     @GetMapping("/")
-    public String loginView() {
+    public String loginView(Model model, HttpSession session) {
+        model.addAttribute("title", "Login - MockTTP");
+        session.setAttribute("csrf_token", UUID.randomUUID().toString());
+        model.addAttribute("csrf_token", session.getAttribute("csrf_token"));
         return "login";
     }
 
+    @GetMapping("/dashboard")
+    public String dashboard(Model model, HttpSession session) {
 
+        if (session.getAttribute("loggedIn") != null) {
+            model.addAttribute("title", "Dashboard - MockTTP");
+            return "dashboard";
+        }
+        return "redirect:/";
+    }
 
-    private final Accounts accounts;
-    private final Transactions transactions;
+    @PostMapping("/")
+    public String login(@Valid User.LoginData data, BindingResult result, HttpSession session, Model model) {
+        try {
+            Map<String, String> values = new HashMap<>();
+            Helper.addNotNull(values, "name", data.identifier);
+            model.addAttribute("values", values);
 
+            if (result.hasErrors()) {
+                model.addAttribute("error", result.getFieldErrors().get(0).getDefaultMessage());
+                return loginView(model, session);
+            }
+
+            if (!session.getAttribute("csrf_token").equals(data.csrf)) {
+                model.addAttribute("error", "Invalid login request");
+                return loginView(model, session);
+            }
+
+            if (!accounts.hasCorrectCredentials(data)) {
+                model.addAttribute("error", "The credentials you supplied are invalid");
+                return loginView(model, session);
+            }
+
+            accounts.login(data.identifier);
+            return "redirect:/dashboard";
+
+        } catch (Throwable e) {
+            model.addAttribute("error", "Something went wrong");
+        }
+        return loginView(model, session);
+    }
+
+    @GetMapping("/register/pws")
+    public String registerPwsView(Model model) {
+        model.addAttribute("title", "Register PWS - MockTTP");
+        return "pws_registration";
+    }
     @Data
     public static class LoginIdentity {
         public String identifier;
@@ -79,10 +132,7 @@ public class GuiController {
         public String mfaData;
     }
 
-    public GuiController(Accounts accounts, Transactions transactions) {
-        this.accounts = accounts;
-        this.transactions = transactions;
-    }
+
 //
 //    @PostMapping("/login")
 //    public <T> ResponseEntity<T> login(LoginIdentity loginIdentity) {

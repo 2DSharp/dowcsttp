@@ -1,0 +1,52 @@
+{{>header}}
+<div>
+    <h2>Add a new PWS</h2>
+    <form action="/register/pws" method="post">
+        {{#error}}
+            <div class="error">
+                {{error}}
+            </div>
+        {{/error}}
+        <div class="field">
+            <label for="name">
+                Name of the service:
+            </label>
+
+            <input id="name" name="name" type="text" autocomplete="off" placeholder="Your Service" {{#values.name}}
+                   value="{{values.name}}" {{/values.name}}>
+        </div>
+        <div class="field">
+            <label for="description">
+                Description:
+            </label>
+            <textarea id="description" name="password" placeholder="Short description of the service">{{#values.description}}{{values.description}}{{/values.description}}</textarea>
+        </div>
+        <div class="field">
+            <label for="url">
+                Base url:
+            </label>
+            <input id="url" name="url" type="url" autocomplete="off" placeholder="https://example.com" {{#values.url}}
+                   value="{{values.url}}" {{/values.url}}>
+        </div>
+        <div class="field">
+            <label for="callback">
+                Callback URI:
+            </label>
+            <input id="callback" name="callback" type="url" autocomplete="off"
+                   placeholder="/dowcs/authorize" {{#values.callback}}
+                   value="{{values.callback}}" {{/values.callback}}>
+        </div>
+        <div class="field">
+            <label for="pubkey">
+                Public Key:
+            </label>
+            <textarea id="pubkey" name="pubkey" placeholder="Example: 2eida9sj21dasdk...">{{#values.pubkey}}{{values.pubkey}}{{/values.pubkey}}</textarea>
+        </div>
+
+        <div style="margin-top: 20px" class="field">
+            <button>Add service</button>
+        </div>
+    </form>
+</div>
+
+{{>footer}}
