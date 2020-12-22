@@ -1,5 +1,6 @@
 package me.twodee.dowcsttp.model.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.hibernate.validator.constraints.URL;
 
@@ -25,5 +26,13 @@ public class Pws {
 
         @NotBlank(message = "Public key must not be blank")
         public String pubkey;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class Challenge {
+        public String value;
+        public String url;
+        public String id;
     }
 }

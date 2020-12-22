@@ -8,6 +8,7 @@ import me.twodee.dowcsttp.ResultObject;
 import me.twodee.dowcsttp.model.dto.Pws;
 import me.twodee.dowcsttp.model.dto.User;
 import me.twodee.dowcsttp.service.Accounts;
+import me.twodee.dowcsttp.service.Authorization;
 import me.twodee.dowcsttp.service.Transactions;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,10 +27,12 @@ public class GuiController {
 
     private final Accounts accounts;
     private final Transactions transactions;
+    private final Authorization authorization;
 
-    public GuiController(Accounts accounts, Transactions transactions) {
+    public GuiController(Accounts accounts, Authorization authorization, Transactions transactions) {
         this.accounts = accounts;
         this.transactions = transactions;
+        this.authorization = authorization;
     }
 
     @GetMapping("/register")
@@ -118,21 +121,43 @@ public class GuiController {
 
     @PostMapping("/register/pws")
     public String submitPwsRegistration(@Valid Pws.Registration data, BindingResult result, HttpSession session, Model model) {
-        Map<String, String> values = new HashMap<>();
-        Helper.addNotNull(values, "name", data.name);
-        Helper.addNotNull(values, "description", data.description);
-        Helper.addNotNull(values, "callback", data.callback);
-        Helper.addNotNull(values, "baseUrl", data.baseUrl);
-        Helper.addNotNull(values, "pubkey", data.pubkey);
+        try {
 
-        model.addAttribute("values", values);
 
-        if (result.hasErrors()) {
-            model.addAttribute("error", result.getFieldErrors().get(0).getDefaultMessage());
+            Map<String, String> values = new HashMap<>();
+            Helper.addNotNull(values, "name", data.name);
+            Helper.addNotNull(values, "description", data.description);
+            Helper.addNotNull(values, "callback", data.callback);
+            Helper.addNotNull(values, "baseUrl", data.baseUrl);
+            Helper.addNotNull(values, "pubkey", data.pubkey);
+
+            model.addAttribute("values", values);
+
+            if (result.hasErrors()) {
+                model.addAttribute("error", result.getFieldErrors().get(0).getDefaultMessage());
+                return registerPwsView(model);
+            }
+
+            var authResult = authorization.createNewPws(data);
+            if (authResult.isSuccessful) {
+                Pws.Challenge challenge = (Pws.Challenge)authResult.obj;
+                model.addAttribute("title", "PWS Registration Challenge - MockTTP");
+                model.addAttribute("challenge", challenge.value);
+                model.addAttribute("pwsId", challenge.id);
+                model.addAttribute("url", challenge.url);
+
+                return "complete_pws_registration";
+            } else {
+                model.addAttribute("error", authResult.error);
+                return registerPwsView(model);
+            }
+
+        } catch (Throwable e) {
+            model.addAttribute("error", "Something went wrong");
+            e.printStackTrace();
             return registerPwsView(model);
-        }
 
-        return registerPwsView(model);
+        }
     }
 
     @Data

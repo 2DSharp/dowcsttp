@@ -3,16 +3,21 @@ package me.twodee.dowcsttp.service;
 import lombok.AllArgsConstructor;
 import me.twodee.dowcsttp.ResultObject;
 import me.twodee.dowcsttp.crypto.CryptoUtils;
+import me.twodee.dowcsttp.crypto.EncryptionFailed;
 import me.twodee.dowcsttp.crypto.PemFile;
 import me.twodee.dowcsttp.model.dto.Pws;
 import me.twodee.dowcsttp.model.entity.PwsIdentity;
 import me.twodee.dowcsttp.repository.PwsIdentityRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Base64;
 
 import static me.twodee.dowcsttp.Helper.generateUniqueId;
 import static me.twodee.dowcsttp.crypto.CryptoUtils.generateSafeToken;
 
+@Service
 @AllArgsConstructor
 public class Authorization {
 
@@ -20,22 +25,32 @@ public class Authorization {
 
 
     public ResultObject createNewPws(Pws.Registration data) throws IOException {
-        if (repository.existsPwsIdentitiesByBaseUrlAndVerified(data.baseUrl, true)) {
-            return ResultObject.builder().isSuccessful(false).error("An app with your base url already exists").build();
+        try {
+            if (repository.existsPwsIdentitiesByBaseUrlAndVerified(data.baseUrl, true)) {
+                return ResultObject.builder().isSuccessful(false).error("An app with your base url already exists").build();
+            }
+
+            String challenge = generateSafeToken(256);
+            String encrypted = CryptoUtils.encryptECIES(PemFile.readPublicKey(data.pubkey), challenge);
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            String id = generateUniqueId() + ".mockttp.local";
+            PwsIdentity pws = PwsIdentity.builder()
+                    .baseUrl(data.baseUrl)
+                    .callback(data.callback)
+                    .description(data.description)
+                    .name(data.name)
+                    .id(id)
+                    .pubkey(data.pubkey)
+                    .challengeHash(encoder.encode(challenge))
+                    .verified(false)
+                    .build();
+            repository.save(pws);
+
+            return ResultObject.builder().isSuccessful(true).obj(new Pws.Challenge(Base64.getEncoder().encodeToString(encrypted.getBytes()), data.baseUrl + data.callback + "?id=" + id, id)).build();
+
+        } catch (EncryptionFailed e) {
+            return ResultObject.builder().isSuccessful(false).error("There was a problem with encryption. Check your curve25519 keys").build();
         }
-
-        String challenge = generateSafeToken(256);
-        String encrypted = CryptoUtils.encryptECIES(PemFile.readPublicKey(data.pubkey), challenge);
-
-        PwsIdentity pws = PwsIdentity.builder()
-                .baseUrl(data.baseUrl)
-                .callback(data.callback)
-                .description(data.description)
-                .name(data.name)
-                .id(generateUniqueId())
-                .pubkey(data.pubkey)
-                .verified(false)
-                .build();
 
     }
 }

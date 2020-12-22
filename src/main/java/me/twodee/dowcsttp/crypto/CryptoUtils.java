@@ -19,7 +19,7 @@ public class CryptoUtils {
         return encoder.encodeToString(bytes);
     }
 
-    public static String encryptECIES(Key key, String data) {
+    public static String encryptECIES(Key key, String data) throws EncryptionFailed {
         try {
             Security.addProvider(new BouncyCastleProvider());
             Cipher iesCipher = Cipher.getInstance("ECIES", BouncyCastleProvider.PROVIDER_NAME);
@@ -29,7 +29,5 @@ public class CryptoUtils {
         } catch (Throwable e) {
             throw new EncryptionFailed(e);
         }
-
-
     }
 }
