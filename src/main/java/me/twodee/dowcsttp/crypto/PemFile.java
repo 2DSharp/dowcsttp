@@ -1,4 +1,4 @@
-package me.twodee.dowcsttp;
+package me.twodee.dowcsttp.crypto;
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -20,11 +20,8 @@ public class PemFile {
 
     private static void write(File file, Key key, String description) throws IOException {
         PemObject pemObject = new PemObject(description, key.getEncoded());
-        PemWriter pemWriter = new PemWriter(new FileWriter(file));
-        try {
+        try (PemWriter pemWriter = new PemWriter(new FileWriter(file))) {
             pemWriter.writeObject(pemObject);
-        } finally {
-            pemWriter.close();
         }
     }
 

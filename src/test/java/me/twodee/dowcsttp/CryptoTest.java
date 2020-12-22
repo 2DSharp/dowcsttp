@@ -1,26 +1,22 @@
 package me.twodee.dowcsttp;
 
+import me.twodee.dowcsttp.crypto.CryptoUtils;
+import me.twodee.dowcsttp.crypto.PemFile;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
-import org.bouncycastle.operator.OutputEncryptor;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.crypto.encrypt.BouncyCastleAesCbcBytesEncryptor;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class EncryptionTest {
+public class CryptoTest {
 
     @Test
     void keyPairGenerationTest() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
@@ -68,5 +64,10 @@ public class EncryptionTest {
         Key readKey = PemFile.readPrivateKey(new File("ec.pem"));
 
         assertThat(readKey).isEqualTo(keyPair.getPrivate());
+    }
+
+    @Test
+    void testRandomString() {
+            System.out.println(CryptoUtils.generateSafeToken(256));
     }
 }
