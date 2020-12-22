@@ -5,34 +5,18 @@ import lombok.Getter;
 import lombok.Setter;
 import me.twodee.dowcsttp.Helper;
 import me.twodee.dowcsttp.ResultObject;
+import me.twodee.dowcsttp.model.dto.Pws;
 import me.twodee.dowcsttp.model.dto.User;
 import me.twodee.dowcsttp.service.Accounts;
 import me.twodee.dowcsttp.service.Transactions;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PKCS8Generator;
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
-import org.bouncycastle.util.io.pem.PemWriter;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.servlet.ModelAndView;
-import org.whispersystems.curve25519.Curve25519;
-import org.whispersystems.curve25519.Curve25519KeyPair;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.security.*;
-import java.security.spec.ECGenParameterSpec;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -126,28 +110,31 @@ public class GuiController {
     }
 
     @GetMapping("/register/pws")
-    public String registerPwsView(Model model) throws NoSuchProviderException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, IOException {
+    public String registerPwsView(Model model) {
         model.addAttribute("title", "Register PWS - MockTTP");
-        //Curve25519KeyPair keyPair = Curve25519.getInstance(Curve25519.BEST).generateKeyPair();
-        Security.addProvider(new BouncyCastleProvider());
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
-        kpg.initialize(new ECGenParameterSpec("curve25519"));
 
-
-        KeyPair keyPair = kpg.generateKeyPair();
-        Cipher iesCipher = Cipher.getInstance("ECIES", BouncyCastleProvider.PROVIDER_NAME);
-        iesCipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
-        byte[] result = iesCipher.doFinal("some days".getBytes());
-        System.out.println(new String(result));
-
-        iesCipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
-        System.out.println(new String(iesCipher.doFinal(result)));
-//        JcaPEMWriter writer = new JcaPEMWriter(new FileWriter("something.pem"));
-//        writer.writeObject(new PKCS8Generator());
-        model.addAttribute("pubkey", keyPair.getPublic().getEncoded().toString());
-        model.addAttribute("privkey", keyPair.getPrivate().getEncoded().toString());
         return "pws_registration";
     }
+
+    @PostMapping("/register/pws")
+    public String submitPwsRegistration(@Valid Pws.Registration data, BindingResult result, HttpSession session, Model model) {
+        Map<String, String> values = new HashMap<>();
+        Helper.addNotNull(values, "name", data.name);
+        Helper.addNotNull(values, "description", data.description);
+        Helper.addNotNull(values, "callback", data.callback);
+        Helper.addNotNull(values, "baseUrl", data.baseUrl);
+        Helper.addNotNull(values, "pubkey", data.pubkey);
+
+        model.addAttribute("values", values);
+
+        if (result.hasErrors()) {
+            model.addAttribute("error", result.getFieldErrors().get(0).getDefaultMessage());
+            return registerPwsView(model);
+        }
+
+        return registerPwsView(model);
+    }
+
     @Data
     public static class LoginIdentity {
         public String identifier;

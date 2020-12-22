@@ -8,10 +8,7 @@ import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -33,24 +30,39 @@ public class PemFile {
         write(file, key, "PUBLIC KEY");
     }
 
+    private static PublicKey readPublicKey(Reader reader) throws IOException {
+        PEMParser pemParser = new PEMParser(reader);
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+        SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemParser.readObject());
+        return converter.getPublicKey(publicKeyInfo);
+    }
+
+    public static PublicKey readPublicKey(String keyString) throws IOException {
+        return readPublicKey(new StringReader(keyString));
+    }
+
+
     public static PublicKey readPublicKey(File file) throws IOException {
         try (FileReader keyReader = new FileReader(file)) {
-            PEMParser pemParser = new PEMParser(keyReader);
-            JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
-            SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemParser.readObject());
-            return converter.getPublicKey(publicKeyInfo);
+           return readPublicKey(keyReader);
         }
     }
 
     public static PrivateKey readPrivateKey(File file) throws IOException {
         try (FileReader keyReader = new FileReader(file)) {
-
-            PEMParser pemParser = new PEMParser(keyReader);
-            JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.getInstance(pemParser.readObject());
-
-            return converter.getPrivateKey(privateKeyInfo);
+            return readPrivateKey(keyReader);
         }
     }
 
+    public static PrivateKey readPrivateKey(String keyString) throws IOException {
+        return readPrivateKey(new StringReader(keyString));
+    }
+
+    private static PrivateKey readPrivateKey(Reader reader) throws IOException {
+        PEMParser pemParser = new PEMParser(reader);
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+        PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.getInstance(pemParser.readObject());
+
+        return converter.getPrivateKey(privateKeyInfo);
+    }
 }

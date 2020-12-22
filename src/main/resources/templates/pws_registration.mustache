@@ -1,8 +1,6 @@
 {{>header}}
 <div>
     <h2>Add a new PWS</h2>
-    <p>Public key: {{pubkey}}</p>
-    <p>Private key: {{privkey}}</p>
     <form action="/register/pws" method="post">
         {{#error}}
             <div class="error">
@@ -21,20 +19,20 @@
             <label for="description">
                 Description:
             </label>
-            <textarea id="description" name="password" placeholder="Short description of the service">{{#values.description}}{{values.description}}{{/values.description}}</textarea>
+            <textarea id="description" name="description" placeholder="Short description of the service">{{#values.description}}{{values.description}}{{/values.description}}</textarea>
         </div>
         <div class="field">
             <label for="url">
                 Base url:
             </label>
-            <input id="url" name="url" type="url" autocomplete="off" placeholder="https://example.com" {{#values.url}}
-                   value="{{values.url}}" {{/values.url}}>
+            <input id="url" name="baseUrl" type="url" autocomplete="off" placeholder="https://example.com" {{#values.baseUrl}}
+                   value="{{values.baseUrl}}" {{/values.baseUrl}}>
         </div>
         <div class="field">
             <label for="callback">
                 Callback URI:
             </label>
-            <input id="callback" name="callback" type="url" autocomplete="off"
+            <input id="callback" name="callback" type="text" autocomplete="off"
                    placeholder="/dowcs/authorize" {{#values.callback}}
                    value="{{values.callback}}" {{/values.callback}}>
         </div>
@@ -42,9 +40,7 @@
             <label for="pubkey">
                 Public Key (PKCS8):
             </label>
-            <textarea id="pubkey" name="pubkey" placeholder="A PKCS#8 formatted public key">{{#values.pubkey}}{{values.pubkey}}{{/values.pubkey}}{{^values.pubkey}}
------BEGIN PRIVATE KEY-----
------END PRIVATE KEY-----{{/values.pubkey}}</textarea>
+            <textarea id="pubkey" name="pubkey" placeholder="A PKCS#8 formatted public key">{{#values.pubkey}}{{values.pubkey}}{{/values.pubkey}}</textarea>
         </div>
 
         <div style="margin-top: 20px" class="field">
