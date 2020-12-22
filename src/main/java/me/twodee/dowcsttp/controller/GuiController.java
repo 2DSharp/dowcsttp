@@ -10,14 +10,20 @@ import me.twodee.dowcsttp.model.dto.User;
 import me.twodee.dowcsttp.service.Accounts;
 import me.twodee.dowcsttp.service.Authorization;
 import me.twodee.dowcsttp.service.Transactions;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -51,7 +57,6 @@ public class GuiController {
             if (registrationResult.isSuccessful) {
                 formModel.addAttribute("complete", true);
             } else {
-                System.out.println(registrationResult.error);
                 formModel.addAttribute("error", registrationResult.error);
             }
         }
@@ -123,6 +128,9 @@ public class GuiController {
     public String submitPwsRegistration(@Valid Pws.Registration data, BindingResult result, HttpSession session, Model model) {
         try {
 
+            if (!accounts.isLoggedIn()) {
+                return loginView(model, session);
+            }
 
             Map<String, String> values = new HashMap<>();
             Helper.addNotNull(values, "name", data.name);
@@ -138,9 +146,9 @@ public class GuiController {
                 return registerPwsView(model);
             }
 
-            var authResult = authorization.createNewPws(data);
+            var authResult = authorization.createNewPws(data, accounts.getCurrentUser());
             if (authResult.isSuccessful) {
-                Pws.Challenge challenge = (Pws.Challenge)authResult.obj;
+                Pws.Challenge challenge = (Pws.Challenge) authResult.obj;
                 model.addAttribute("title", "PWS Registration Challenge - MockTTP");
                 model.addAttribute("challenge", challenge.value);
                 model.addAttribute("pwsId", challenge.id);
@@ -158,6 +166,38 @@ public class GuiController {
             return registerPwsView(model);
 
         }
+    }
+
+    @GetMapping("/verify_pws/{pwsId}")
+    public String verifyPws(Model model, @PathVariable String pwsId) {
+        model.addAttribute("title", "Verification - MockTTP");
+        var pwsOptional = authorization.getPws(pwsId);
+        if (pwsOptional.isPresent()) {
+            var pws = pwsOptional.get();
+            RestTemplate restTemplate = new RestTemplate();
+            try {
+                var result = restTemplate.getForEntity(pws.getChallengeUrl(), Pws.ChallengeResult.class);
+
+                if (result.hasBody() && result.getBody() != null && BCrypt.checkpw(result.getBody().challenge, pws.getChallengeHash())) {
+                    model.addAttribute("message", "Successfully added " + pws.getName() + " to MockTTP");
+                    authorization.verifyPws(pws.getId());
+                } else {
+                    model.addAttribute("message", "MockTTP couldn't find the right challenge result in the url. Check and try again");
+                }
+            } catch (HttpClientErrorException e) {
+                if (!e.getStatusCode().is2xxSuccessful()) {
+                    model.addAttribute("message", "MockTTP couldn't find the right challenge result in the url. Check and try again");
+                } else {
+                    model.addAttribute("message", "Something went wrong");
+                    e.printStackTrace();
+                }
+                return "pws_challenge_result";
+            }
+        }
+        else {
+            model.addAttribute("message", "Invalid PWS");
+        }
+        return "pws_challenge_result";
     }
 
     @Data

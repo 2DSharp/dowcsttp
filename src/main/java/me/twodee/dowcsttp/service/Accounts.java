@@ -18,9 +18,9 @@ public class Accounts {
     private final UserIdentityRepository repository;
     private final HttpSession session;
 
-    public Accounts(UserIdentityRepository repository, HttpSession session, HttpSession session1) {
+    public Accounts(UserIdentityRepository repository, HttpSession session) {
         this.repository = repository;
-        this.session = session1;
+        this.session = session;
     }
 
     public boolean hasCorrectCredentials(User.LoginData loginIdentity) {
@@ -62,5 +62,13 @@ public class Accounts {
         UserIdentity identity = repository.findByEmail(identifier).get();
         session.setAttribute("loggedIn", true);
         session.setAttribute("user", identity);
+    }
+
+    public boolean isLoggedIn() {
+        return session.getAttribute("loggedIn") != null && (boolean) session.getAttribute("loggedIn");
+    }
+
+    public UserIdentity getCurrentUser() {
+        return (UserIdentity) session.getAttribute("user");
     }
 }

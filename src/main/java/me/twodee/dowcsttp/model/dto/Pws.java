@@ -1,7 +1,9 @@
 package me.twodee.dowcsttp.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.URL;
 
 import javax.validation.constraints.NotBlank;
@@ -34,5 +36,12 @@ public class Pws {
         public String value;
         public String url;
         public String id;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ChallengeResult {
+        public String challenge;
     }
 }
