@@ -1,6 +1,8 @@
 {{>header}}
 <div>
     <h2>Add a new PWS</h2>
+    <p>Public key: {{pubkey}}</p>
+    <p>Private key: {{privkey}}</p>
     <form action="/register/pws" method="post">
         {{#error}}
             <div class="error">
@@ -38,9 +40,11 @@
         </div>
         <div class="field">
             <label for="pubkey">
-                Public Key:
+                Public Key (PKCS8):
             </label>
-            <textarea id="pubkey" name="pubkey" placeholder="Example: 2eida9sj21dasdk...">{{#values.pubkey}}{{values.pubkey}}{{/values.pubkey}}</textarea>
+            <textarea id="pubkey" name="pubkey" placeholder="A PKCS#8 formatted public key">{{#values.pubkey}}{{values.pubkey}}{{/values.pubkey}}{{^values.pubkey}}
+-----BEGIN PRIVATE KEY-----
+-----END PRIVATE KEY-----{{/values.pubkey}}</textarea>
         </div>
 
         <div style="margin-top: 20px" class="field">
