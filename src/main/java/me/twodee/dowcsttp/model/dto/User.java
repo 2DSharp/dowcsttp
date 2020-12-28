@@ -34,4 +34,10 @@ public class User {
 
         public String csrf;
     }
+
+    @Data
+    public static class PwsConnectAuthData extends LoginData {
+        @NotBlank(message = "PWS identifier is missing")
+        public String special;
+    }
 }

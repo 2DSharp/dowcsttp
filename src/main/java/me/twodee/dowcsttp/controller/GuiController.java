@@ -32,12 +32,11 @@ import java.util.UUID;
 public class GuiController {
 
     private final Accounts accounts;
-    private final Transactions transactions;
+
     private final Authorization authorization;
 
-    public GuiController(Accounts accounts, Authorization authorization, Transactions transactions) {
+    public GuiController(Accounts accounts, Authorization authorization) {
         this.accounts = accounts;
-        this.transactions = transactions;
         this.authorization = authorization;
     }
 
@@ -71,6 +70,7 @@ public class GuiController {
     @GetMapping("/")
     public String loginView(Model model, HttpSession session) {
         model.addAttribute("title", "Login - MockTTP");
+        model.addAttribute("action", "/");
         session.setAttribute("csrf_token", UUID.randomUUID().toString());
         model.addAttribute("csrf_token", session.getAttribute("csrf_token"));
         return "login";
@@ -88,33 +88,38 @@ public class GuiController {
 
     @PostMapping("/")
     public String login(@Valid User.LoginData data, BindingResult result, HttpSession session, Model model) {
-        try {
-            Map<String, String> values = new HashMap<>();
-            Helper.addNotNull(values, "name", data.identifier);
-            model.addAttribute("values", values);
 
+        Map<String, String> values = new HashMap<>();
+        Helper.addNotNull(values, "identifier", data.identifier);
+        model.addAttribute("values", values);
+        if (isLoginSuccessful(data, result, session, model)) {
+            return "redirect:/dashboard";
+        }
+        return loginView(model, session);
+
+    }
+
+    private boolean isLoginSuccessful(@Valid User.LoginData data, BindingResult result, HttpSession session, Model model) {
+        try {
             if (result.hasErrors()) {
                 model.addAttribute("error", result.getFieldErrors().get(0).getDefaultMessage());
-                return loginView(model, session);
+                return false;
             }
-
             if (!session.getAttribute("csrf_token").equals(data.csrf)) {
                 model.addAttribute("error", "Invalid login request");
-                return loginView(model, session);
+                return false;
             }
-
             if (!accounts.hasCorrectCredentials(data)) {
                 model.addAttribute("error", "The credentials you supplied are invalid");
-                return loginView(model, session);
+                return false;
             }
-
             accounts.login(data.identifier);
-            return "redirect:/dashboard";
+            return true;
 
         } catch (Throwable e) {
             model.addAttribute("error", "Something went wrong");
         }
-        return loginView(model, session);
+        return false;
     }
 
     @GetMapping("/register/pws")
@@ -193,60 +198,45 @@ public class GuiController {
                 }
                 return "pws_challenge_result";
             }
-        }
-        else {
+        } else {
             model.addAttribute("message", "Invalid PWS");
         }
         return "pws_challenge_result";
     }
 
-    @Data
-    public static class LoginIdentity {
-        public String identifier;
-        public String password;
+    @GetMapping("/connect")
+    public String connectPwsAccount(@RequestParam("pws_identifier") String pwsId, HttpSession session, Model model) {
+
+        var pws = authorization.getPws(pwsId);
+
+        if (pws.isPresent()) {
+            model.addAttribute("title", "Authorize " + pws.get().getName() + " to use your MockTTP account");
+            model.addAttribute("action", "/connect");
+            session.setAttribute("csrf_token", UUID.randomUUID().toString());
+            model.addAttribute("special", pwsId);
+            model.addAttribute("csrf_token", session.getAttribute("csrf_token"));
+        } else {
+            model.addAttribute("title", "Invalid PWS connection request");
+            model.addAttribute("complete", true);
+        }
+        return "login";
     }
 
-    public static class AuthorizationDto {
-        public LoginIdentity loginIdentity;
-        public String initiationToken;
+    @PostMapping("/connect")
+    public String connectPwsAccount(@Valid User.PwsConnectAuthData data, BindingResult result, HttpSession session, Model model) {
+        Map<String, String> values = new HashMap<>();
+        Helper.addNotNull(values, "identifier", data.identifier);
+        model.addAttribute("values", values);
+
+        if (isLoginSuccessful(data, result, session, model)) {
+            var pws = authorization.getPws(data.special);
+            if (pws.isEmpty()) {
+                model.addAttribute("error", "Invalid PWS");
+                return connectPwsAccount(data.special, session, model);
+            }
+            var pwsVal = pws.get();
+            return "redirect:" + pwsVal.getBaseUrl() + pwsVal.getCallback();
+        }
+        return connectPwsAccount(data.special, session, model);
     }
-
-    @Getter
-    @Setter
-    public static class LoginLoginIdentityWithMFA extends LoginIdentity {
-        public String mfaData;
-    }
-
-
-//
-//    @PostMapping("/login")
-//    public <T> ResponseEntity<T> login(LoginIdentity loginIdentity) {
-//
-//        if (accounts.hasCorrectCredentials(loginIdentity)) {
-//            accounts.login(loginIdentity);
-//            // handle success
-//        }
-//        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-//    }
-//
-//    @PostMapping("/authorize")
-//    public Object login(AuthorizationDto authorizationDto, HttpSession session) {
-//
-//        if (accounts.hasCorrectCredentials(authorizationDto.loginIdentity) && session.getAttribute("initiationToken").equals(authorizationDto.initiationToken)) {
-//            accounts.login(authorizationDto.loginIdentity);
-//            // get the transaction identity related to the user identity and pws identity
-//            String transactionIdentity = transactionManager.getTransactionIdentity(session, authorizationDto.loginIdentity.identifier);
-//            String authToken = transactionManager.getAuthToken(authorizationDto.loginIdentity.identifier);
-//            accounts.getPws(transactionIdentity).getRedirectUrl();
-//
-//        }
-//        return new ResponseEntity<String>("https://facebook.com", HttpStatus.MOVED_PERMANENTLY);
-//
-//    }
-//
-//    @GetMapping("/authorize")
-//    public ResponseEntity showAuthorizationPage(@RequestParam("pws_identifier") String pwsIdentifier, HttpSession session) {
-//        String initiationToken = transactionManager.generateInitiationToken(session, pwsIdentifier);
-//        // pass the token to moustache
-//    }
 }
